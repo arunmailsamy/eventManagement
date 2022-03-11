@@ -1,0 +1,14 @@
+{
+    "500":{
+        "statusCode":500,
+        "message":"Internal Server error"
+    },
+    "404":{
+        "statusCode":404,
+        "message":"Not found"
+    },
+    "400":{
+        "statusCode":400,
+        "message":"Not found"
+    }
+}
