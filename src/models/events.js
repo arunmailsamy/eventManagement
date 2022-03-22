@@ -36,9 +36,13 @@ const eventSchema = new mongoose.Schema({
     },
     totalSeats: {
         type: Number,
+        required: false
+    },
+    availableSeatsGa: {
+        type: Number,
         required: true
     },
-    availableSeats: {
+    availableSeatsVip: {
         type: Number,
         required: true
     },

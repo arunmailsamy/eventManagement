@@ -21,7 +21,8 @@ const fetchEvent = async (req, res, next) => {
 const createEvent = async (req, res, next) => {
     try {
 
-        const { category, name, description, image, vipPrice, gaPrice, slots, city, totalSeats, availableSeats, venueId } = req.body;
+        let { category, name, description, image, vipPrice, gaPrice, slots, city, totalSeats, availableSeatsGa,availableSeatsVip, venueId } = req.body;
+        totalSeats = availableSeatsGa +availableSeatsVip;
         if (venueId) {
             const venueDetails = await venueSchema.findOne({ _id: venueId });
             if (!venueDetails) {
@@ -36,7 +37,8 @@ const createEvent = async (req, res, next) => {
                 data: `venueId is mandatory`
             }
         }
-        const event = new eventSchema({ category, name, description, image, vipPrice, gaPrice, slots, city, totalSeats, availableSeats, venueId });
+        const event = new eventSchema({ category, name, description, image, vipPrice, gaPrice, slots, city, totalSeats, availableSeatsGa,availableSeatsVip, venueId });
+
         const eventDetails = await event.save();
         return res.json({ eventDetails })
     } catch (err) {
@@ -100,7 +102,6 @@ const deleteEvent = async (req, res, next) => {
         await sess.commitTransaction();
         res.json({ message: `Deleted successfully`, id: req.params.id })
     } catch (err) {
-        console.log(`test3:${err}`);
         next(err);
     }
 

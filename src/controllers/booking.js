@@ -46,7 +46,13 @@ const bookEvent = async (req, res, next) => {
 
     try {
         let eventDetails;
-        const { eventId, noOfSeatsBooked, totalPrice, bookingStatus, bookingDate, venueId, userId } = req.body;
+        let { eventId, noOfVipSeats = 0, noOfGaSeats = 0, totalPrice, bookingStatus, bookingDate, venueId, userId } = req.body;
+        if (noOfVipSeats <= 0 && noOfGaSeats <= 0) {
+            throw {
+                ...errors[404],
+                data: `Atleast one seat is mandatory`
+            }
+        }
         if (eventId) {
             eventDetails = await eventSchema.findOne({ _id: eventId });
             if (!eventDetails) {
@@ -87,31 +93,40 @@ const bookEvent = async (req, res, next) => {
             }
         } else {
             throw {
-                ...errors[404],
+                ...errors[404],    
                 data: `userId is mandatory`
-            }
+            } 
         }*/
         const sess = await mongoose.startSession();
         sess.startTransaction();
-        let bookingDetails = new bookingSchema({ eventId, noOfSeatsBooked, totalPrice, bookingStatus: "Booked", bookingDate, venueId, userId });
-        bookingDetails = await bookingDetails.save({ session: sess });
+
+        let availableSeatsGa = 0, gaPrice = 0, availableSeatsVip = 0, vipPrice = 0;
+
+        availableSeatsGa = eventDetails.availableSeatsGa - noOfGaSeats;
+        gaPrice = eventDetails.gaPrice * noOfGaSeats;
+        availableSeatsVip = eventDetails.availableSeatsVip - noOfVipSeats;
+        vipPrice = eventDetails.vipPrice * noOfVipSeats;
+
+
+        totalPrice = vipPrice + gaPrice;
+
+        let bookingDetails = new bookingSchema({ eventId, noOfVipSeats, noOfGaSeats, totalPrice, bookingStatus: "Booked", bookingDate, venueId, userId });
         if (!bookingDetails) {
             throw {
                 ...errors[404],
                 data: `cannot book the tickets`
             }
         }
+        bookingDetails = await bookingDetails.save({ session: sess });
 
-        let availableSeats = eventDetails.availableSeats - bookingDetails.noOfSeatsBooked;
-
-        if (availableSeats < 0 || eventDetails.availableSeats <= 0) {
+        if ((availableSeatsGa < 0 || eventDetails.availableSeatsGa <= 0) || (availableSeatsVip < 0 || eventDetails.availableSeatsVip <= 0)) {
             throw {
                 ...errors[404],
                 data: `No of seats exceed the available seats`
             }
         }
 
-        const updatedEventDetails = await eventSchema.findByIdAndUpdate(eventId, { $set: { availableSeats } }, { new: true, session: sess });
+        const updatedEventDetails = await eventSchema.findByIdAndUpdate(eventId, { $set: { availableSeatsGa, availableSeatsVip } }, { new: true, session: sess });
         if (!updatedEventDetails) {
             throw {
                 ...errors[404],
