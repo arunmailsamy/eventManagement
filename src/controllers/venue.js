@@ -47,7 +47,7 @@ const updateVenue = async (req, res, next) => {
 const deleteVenue = async (req, res, next) => {
     try {
         const eventDetails = await eventSchema.find({ venueId: req.params.id });
-        if (eventDetails){
+        if (eventDetails.length!=0){
             throw {
                 ...errors[404],
                 data: `cannot delete venue: ${req.params.id}. Venue is already linked to an event`

@@ -26,26 +26,13 @@ const eventSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    slots: {
-        type: Number,
-        required: true
-    },
+
     city: {
         type: String,
         required: true
     },
-    totalSeats: {
-        type: Number,
-        required: false
-    },
-    availableSeatsGa: {
-        type: Number,
-        required: true
-    },
-    availableSeatsVip: {
-        type: Number,
-        required: true
-    },
+
+    slotDetails: [{ slot: Number, totalSeats: Number, availableSeatsGa: Number, availableSeatsVip: Number }],
     venueId: {
         type: mongoose.Types.ObjectId,
         ref: 'venue'

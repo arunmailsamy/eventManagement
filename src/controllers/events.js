@@ -17,12 +17,35 @@ const fetchEvent = async (req, res, next) => {
         next(err);
     }
 }
+const fetchAllEvents = async (req, res, next) => {
+    try {
+        const eventDetails = await eventSchema.find();
+        if (!eventDetails) {
+            throw {
+                ...errors[404],
+                data: `cannot fetch the eventDetails`
+            }
+        }
+        return res.json({ eventDetails });
+    } catch (err) {
+        next(err);
+    }
+}
 
 const createEvent = async (req, res, next) => {
     try {
 
-        let { category, name, description, image, vipPrice, gaPrice, slots, city, totalSeats, availableSeatsGa,availableSeatsVip, venueId } = req.body;
-        totalSeats = availableSeatsGa +availableSeatsVip;
+        let { category, name, description, image, vipPrice, gaPrice, city, slotDetails, venueId } = req.body;
+        slotDetails.forEach(element => {    //slotDetails is an array
+            if (!("availableSeatsGa" in element)){   // to check if particular array element is not defined
+                element.availableSeatsGa = 0;
+            }
+            if (!("availableSeatsVip" in element)){
+                element.availableSeatsVip = 0;
+            }
+            element.totalSeats = element.availableSeatsGa + element.availableSeatsVip
+        });
+
         if (venueId) {
             const venueDetails = await venueSchema.findOne({ _id: venueId });
             if (!venueDetails) {
@@ -37,7 +60,7 @@ const createEvent = async (req, res, next) => {
                 data: `venueId is mandatory`
             }
         }
-        const event = new eventSchema({ category, name, description, image, vipPrice, gaPrice, slots, city, totalSeats, availableSeatsGa,availableSeatsVip, venueId });
+        const event = new eventSchema({ category, name, description, image, vipPrice, gaPrice, city, slotDetails, venueId });
 
         const eventDetails = await event.save();
         return res.json({ eventDetails })
@@ -67,7 +90,7 @@ const deleteEvent = async (req, res, next) => {
 
     try {
         const eventDetails = await eventSchema.findById({ _id: req.params.id });
-        if (!eventDetails){
+        if (!eventDetails) {
             throw {
                 ...errors[404],
                 data: `Event with ID :${req.params.id} NOT FOUND`
@@ -91,8 +114,8 @@ const deleteEvent = async (req, res, next) => {
             }
 
         }
-  
-        const deletedEventDetails = await eventSchema.deleteOne({ _id: req.params.id },{session:sess});
+
+        const deletedEventDetails = await eventSchema.deleteOne({ _id: req.params.id }, { session: sess });
         if (!deletedEventDetails.deletedCount) {
             throw {
                 ...errors[404],
@@ -110,3 +133,4 @@ exports.fetchEvent = fetchEvent;
 exports.createEvent = createEvent;
 exports.updateEvent = updateEvent;
 exports.deleteEvent = deleteEvent;
+exports.fetchAllEvents = fetchAllEvents;

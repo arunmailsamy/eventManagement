@@ -5,8 +5,12 @@ const bookingSchema = new mongoose.Schema({
         type: mongoose.Types.ObjectId,
         ref: 'event'
     },
+    slotId:{
+        type: mongoose.Types.ObjectId,
+        required: true,
+    },
     noOfVipSeats: {
-        type: Number,
+        type: Number, 
         required: false,
     },
     noOfGaSeats: {

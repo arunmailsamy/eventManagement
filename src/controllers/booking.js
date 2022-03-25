@@ -46,7 +46,9 @@ const bookEvent = async (req, res, next) => {
 
     try {
         let eventDetails;
-        let { eventId, noOfVipSeats = 0, noOfGaSeats = 0, totalPrice, bookingStatus, bookingDate, venueId, userId } = req.body;
+        let slotDetails;
+        let { eventId, noOfVipSeats = 0, noOfGaSeats = 0, totalPrice, slotId, bookingStatus, bookingDate, venueId, userId } = req.body;
+
         if (noOfVipSeats <= 0 && noOfGaSeats <= 0) {
             throw {
                 ...errors[404],
@@ -82,6 +84,17 @@ const bookEvent = async (req, res, next) => {
                 data: `venueId is mandatory`
             }
         }
+
+        if (slotId) {
+            slotDetails = eventDetails.slotDetails.filter(element => element._id == slotId);
+            if (slotDetails.length==0) {
+                throw {
+                    ...errors[404],
+                    data: `Slot Details not found`
+                }
+
+            }
+        }
         //To be replaced for user id validation once user is created
         /* if (userId) {
             const userDetails = await userSchema.findOne({ _id: userId });
@@ -102,15 +115,13 @@ const bookEvent = async (req, res, next) => {
 
         let availableSeatsGa = 0, gaPrice = 0, availableSeatsVip = 0, vipPrice = 0;
 
-        availableSeatsGa = eventDetails.availableSeatsGa - noOfGaSeats;
+        availableSeatsGa = slotDetails[0].availableSeatsGa - noOfGaSeats;
         gaPrice = eventDetails.gaPrice * noOfGaSeats;
-        availableSeatsVip = eventDetails.availableSeatsVip - noOfVipSeats;
+        availableSeatsVip = slotDetails[0].availableSeatsVip - noOfVipSeats;
         vipPrice = eventDetails.vipPrice * noOfVipSeats;
-
-
         totalPrice = vipPrice + gaPrice;
 
-        let bookingDetails = new bookingSchema({ eventId, noOfVipSeats, noOfGaSeats, totalPrice, bookingStatus: "Booked", bookingDate, venueId, userId });
+        let bookingDetails = new bookingSchema({ eventId, noOfVipSeats, noOfGaSeats, totalPrice, slotId, bookingStatus: "Booked", bookingDate, venueId, userId });
         if (!bookingDetails) {
             throw {
                 ...errors[404],
@@ -119,22 +130,23 @@ const bookEvent = async (req, res, next) => {
         }
         bookingDetails = await bookingDetails.save({ session: sess });
 
-        if ((availableSeatsGa < 0 || eventDetails.availableSeatsGa <= 0) || (availableSeatsVip < 0 || eventDetails.availableSeatsVip <= 0)) {
+        if ((availableSeatsGa < 0 || slotDetails[0].availableSeatsGa <= 0) || (availableSeatsVip < 0 || slotDetails[0].availableSeatsVip <= 0)) {
             throw {
                 ...errors[404],
                 data: `No of seats exceed the available seats`
             }
         }
 
-        const updatedEventDetails = await eventSchema.findByIdAndUpdate(eventId, { $set: { availableSeatsGa, availableSeatsVip } }, { new: true, session: sess });
-        if (!updatedEventDetails) {
+       const updatedEventDetails = await eventSchema.updateOne({ _id: eventId, "slotDetails._id":slotId }, { $set: {"slotDetails.$.availableSeatsGa":availableSeatsGa,"slotDetails.$.availableSeatsVip":availableSeatsVip} }, { new :true,session: sess });
+
+        if (!updatedEventDetails.modifiedCount) {
             throw {
-                ...errors[404],
+                ...errors[404], 
                 data: `cannot update the venue details : ${req.params.id}. ID not found`
             }
         }
         await sess.commitTransaction();
-        return res.json({ bookingDetails })
+        return res.json({ bookingDetails }) 
     } catch (err) {
         next(err);
     }

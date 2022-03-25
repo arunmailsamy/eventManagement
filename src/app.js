@@ -14,7 +14,7 @@ const httpErrorRequests = require('./middlewares/http-error-handlers'); //http e
 const PORT = process.env.PORT || 8000;
 //app.use(logRequests); //to log requests in console
 app.use(express.json());
-console.log("test00")
+
 app.use(function (req, res, next) {
 
     // Website you wish to allow to connect
